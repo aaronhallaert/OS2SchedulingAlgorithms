@@ -46,20 +46,25 @@ public class Grafiek {
 		bp.setCenter(layout2);
 		bp.setRight(textField);
 		
-		Button buttonScale50= new Button("50");
-		buttonScale50.addEventHandler(ActionEvent.ACTION, (e) -> {
-			yAxis.setAutoRanging(false);
-			yAxis.setUpperBound(50);
-		});
-		Button buttonScale100= new Button("100");
-		buttonScale100.addEventHandler(ActionEvent.ACTION, (e) -> {
-			yAxis.setAutoRanging(false);
-			yAxis.setUpperBound(100);
-		});
 		Button buttonScale200= new Button("200");
 		buttonScale200.addEventHandler(ActionEvent.ACTION, (e) -> {
 			yAxis.setAutoRanging(false);
 			yAxis.setUpperBound(200);
+		});
+		Button buttonScale500= new Button("500");
+		buttonScale500.addEventHandler(ActionEvent.ACTION, (e) -> {
+			yAxis.setAutoRanging(false);
+			yAxis.setUpperBound(500);
+		});
+		Button buttonScale1000= new Button("1000");
+		buttonScale1000.addEventHandler(ActionEvent.ACTION, (e) -> {
+			yAxis.setAutoRanging(false);
+			yAxis.setUpperBound(1000);
+		});
+		Button buttonScale1500= new Button("1500");
+		buttonScale1500.addEventHandler(ActionEvent.ACTION, (e) -> {
+			yAxis.setAutoRanging(false);
+			yAxis.setUpperBound(1500);
 		});
 		Button buttonScaleAuto= new Button("Auto");
 		
@@ -68,7 +73,7 @@ public class Grafiek {
 		});
 		
 		HBox buttons=new HBox();
-		buttons.getChildren().addAll(buttonScale50,buttonScale100,buttonScale200,buttonScaleAuto);
+		buttons.getChildren().addAll(buttonScale200,buttonScale500,buttonScale1000,buttonScale1500,buttonScaleAuto);
 		
 		bp.setTop(buttons);
 		
