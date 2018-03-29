@@ -4,20 +4,14 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-
 import java.util.LinkedList;
-
 import java.util.Queue;
-
-
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-
 import javafx.application.Application;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -30,7 +24,6 @@ import javafx.scene.chart.XYChart;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
-
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
@@ -118,9 +111,11 @@ public class Main extends Application {
 
 		String pad = null;
 		if (procesKeuze.getValue().equals("10.000 processen")) {
-			pad = "D:/School/Industriele Ingenieurswetenschappen/iiw Ba3/Semester2/Besturingssystemen 2/processen10000.xml";
+			//pad = "D:/School/Industriele Ingenieurswetenschappen/iiw Ba3/Semester2/Besturingssystemen 2/processen10000.xml";
+			pad="C:/Users/tibo/Documents/WorkspaceOS/processen10000.xml";
 		} else if (procesKeuze.getValue().equals("50.000 processen")) {
-			pad = "D:/School/Industriele Ingenieurswetenschappen/iiw Ba3/Semester2/Besturingssystemen 2/processen50000.xml";
+			//pad = "D:/School/Industriele Ingenieurswetenschappen/iiw Ba3/Semester2/Besturingssystemen 2/processen50000.xml";
+			pad="C:/Users/tibo/Documents/WorkspaceOS/processen50000.xml";
 		}
 
 		// hier worden alle processen ingelezen
@@ -142,11 +137,27 @@ public class Main extends Application {
 		}
 		
 		// data MLFB inladen
-				if (soort.getValue().equals("nTAT")) {
-					addMLFB(processen, "nTAT");
-				} else if (soort.getValue().equals("wachttijd")) {
-					addMLFB(processen, "wachttijd");
-				}
+		if (soort.getValue().equals("nTAT")) {
+			addMLFB(processen, "nTAT");
+		} else if (soort.getValue().equals("wachttijd")) {
+			addMLFB(processen, "wachttijd");
+		}
+		
+		
+		// data RR2 inladen
+		if (soort.getValue().equals("nTAT")) {
+			addRRQ2(processen, "nTAT");
+		} else if (soort.getValue().equals("wachttijd")) {
+			addRRQ2(processen, "wachttijd");
+		}
+		
+		// data RR8 inladen
+		if (soort.getValue().equals("nTAT")) {
+			addRRQ8(processen, "nTAT");
+		} else if (soort.getValue().equals("wachttijd")) {
+			addRRQ8(processen, "wachttijd");
+		}
+		 
 
 		//// ANALOOG AAN HIERBOVEN ALGORITMES TOEVOEGEN //
 		/*
@@ -413,6 +424,322 @@ public class Main extends Application {
 		
 		
 	}
+	
+	public ArrayList<Process> bewerkProcessenRRQ2(ArrayList<Process> processen){
+		
+		//0.1) we maken een kopie van de binnenkomende processen en intializeren alles op 0 aangezien dit een doorgegeven lijst is en gebruikt werd door andere algoritmes
+		ArrayList<Process> procesLijst= new ArrayList<Process>(processen);
+		for (Process x: procesLijst) {
+			x.setEindtijd(0);
+			x.setWachttijd(0);
+			x.setRemainingTime(x.getServiceTime());
+			x.setnTAT(0);
+			x.setTAT(0);
+		}
+		
+		//0.2) procesLijst sorteren op arrivalTime
+		Collections.sort(procesLijst, new Comparator<Process>() {
+
+			public int compare(Process s1, Process s2) {
+				return Integer.compare(s1.getArrivalTime(), s2.getArrivalTime());
+			}
+		});
+		
+		
+		
+		
+		//1) definiëren van de variabelen
+		
+			//1.1) de lijsten die we zullen gebruiken
+			ArrayList<Process> klaarLijst = new ArrayList<Process>();
+			LinkedList<Process> wachtLijst = new LinkedList<Process>();
+			
+			//1.2) totale aantal processen
+			int totAantalProcessen = processen.size();
+			
+			//1.3) totaal aantalk processen al genomen
+			int genomenProcessen = 0;
+			
+			//1.4) de maximale tijd die een proces kan uitgevoerd worden vooraleer we switchen naar een ander process
+			int qTime = 2;
+			
+			//1.5) tijdelijk process, zodat we niet telkens een nieuw moeten aanmaken
+			Process pTemp;
+			
+			//1.6) huidige tijd op de tijd waarin het eerste process zal binnekomen zetten
+			int huidigeTijd= procesLijst.get(0).getArrivalTime();
+			
+			//1.7) remaining time variabele (kan hier enkel 1 zijn, in andere geval 1.2.3.4.5.6.7
+			int remainingTime; //hoogst waarschijnlijk niet nodig
+			
+		
+		
+		
+			
+			//System.out.println("size"+procesLijst.size());
+		//2) executen van de algoritme
+			//zolang niet alle processen executed zijn
+			while(klaarLijst.size() != totAantalProcessen) {
+				
+				
+				//2.1) kijken als er voor het huidige tijdstip nog processen moeten binnekomen	
+				while ( !procesLijst.isEmpty() &&huidigeTijd >= procesLijst.get(0).getArrivalTime() ) {
+					
+					wachtLijst.addLast(procesLijst.get(0));
+					procesLijst.remove(0);
+					genomenProcessen++;
+					
+					
+				}
+				
+				//2.2) logica voor in de wachtlijst: 
+					if(wachtLijst.isEmpty()) {
+						huidigeTijd = procesLijst.get(0).getArrivalTime();
+						//ook mog om huidige tijd te zetten op de arrivaltime van het volgende process
+					}
+					
+					//als de wachtlijst niet leeg is
+					else {
+						//pak het eerste proces in de wachttijd
+						pTemp = wachtLijst.removeFirst();
+						
+						//als remainingtime = servicetime, dan is het de 1e keer dat het wordt uitgevoerd, dus starttijd is dan
+						if(pTemp.getRemainingTime()==pTemp.getServiceTime()) {pTemp.setStarttijd(huidigeTijd);}
+					
+			 			//als de remaining service time nog minder dan 2 is
+						if(pTemp.getRemainingTime()<qTime) {
+							
+							huidigeTijd = huidigeTijd + pTemp.getRemainingTime();
+							pTemp.setRemainingTime(0);
+							
+							//process is dan klaar 
+							pTemp.setEindtijd(huidigeTijd);
+							klaarLijst.add(pTemp);
+						}
+						
+						//als de remaining service time =2
+						else if(pTemp.getRemainingTime()==qTime){
+							
+							
+							 huidigeTijd = huidigeTijd + qTime;
+							 pTemp.setRemainingTime(0);
+							 
+							 //process is klaar, voeg het toe aan de klaarlijst
+							 pTemp.setEindtijd(huidigeTijd);
+							 klaarLijst.add(pTemp);
+						}
+						
+						//als de remainnig service time > 2 
+						else {
+							pTemp.setRemainingTime(pTemp.getRemainingTime()-qTime);
+							huidigeTijd = huidigeTijd +qTime;
+							
+							//process kan niet klaar zijn
+							//voeg het achteraan toe in de wachtlijst
+							wachtLijst.addLast(pTemp);
+						}
+					//System.out.println("geraakt nietuit een lege wachtlijst");
+					//einde van als de wachtlijst niet leeg is	
+					}
+				//System.out.println("geraakt aan 543");
+				//System.out.println("size" + klaarLijst.size());
+				//System.out.println("aantal elementen in wachtLijst" + wachtLijst.size());
+				//einde van de while niet alle processen in klaar zitten
+				}
+			
+			
+			
+			
+			
+		//System.out.println("geraakt aan 549");	
+		//3) adhv de eindtijden kunnen we de rest telkens berekenen
+		for(Process p : klaarLijst) {
+			p.setWachttijd( p.getEindtijd() - p.getArrivalTime() - p.getServiceTime() );
+			
+			p.setTAT( p.getEindtijd() - p.getArrivalTime() );
+			
+			p.setnTAT( p.getTAT()/p.getServiceTime()  );
+		}
+		
+	//System.out.println("geraakt hier");
+	return klaarLijst;
+	//einde methode bewerkprocessenRRQ2	
+	}
+	
+	public ArrayList<Process> bewerkProcessenRRQ8(ArrayList<Process> processen){
+		
+		//0.1) we maken een kopie van de binnenkomende processen en intializeren alles op 0 aangezien dit een doorgegeven lijst is en gebruikt werd door andere algoritmes
+		ArrayList<Process> procesLijst= new ArrayList<Process>(processen);
+		for (Process x: procesLijst) {
+			x.setEindtijd(0);
+			x.setWachttijd(0);
+			x.setRemainingTime(x.getServiceTime());
+			x.setnTAT(0);
+			x.setTAT(0);
+		}
+		
+		//0.2) procesLijst sorteren op arrivalTime
+		Collections.sort(procesLijst, new Comparator<Process>() {
+
+			public int compare(Process s1, Process s2) {
+				return Integer.compare(s1.getArrivalTime(), s2.getArrivalTime());
+			}
+		});
+		
+		
+		
+		
+		//1) definiëren van de variabelen
+		
+			//1.1) de lijsten die we zullen gebruiken
+			ArrayList<Process> klaarLijst = new ArrayList<Process>();
+			LinkedList<Process> wachtLijst = new LinkedList<Process>();
+			
+			//1.2) totale aantal processen
+			int totAantalProcessen = processen.size();
+			
+			//1.3) totaal aantalk processen al genomen
+			int genomenProcessen = 0;
+			
+			//1.4) de maximale tijd die een proces kan uitgevoerd worden vooraleer we switchen naar een ander process
+			int qTime = 8;
+			
+			//1.5) tijdelijk process, zodat we niet telkens een nieuw moeten aanmaken
+			Process pTemp;
+			
+			//1.6) huidige tijd op de tijd waarin het eerste process zal binnekomen zetten
+			int huidigeTijd= procesLijst.get(0).getArrivalTime();
+			
+			//1.7) remaining time variabele (kan hier enkel 1 zijn, in andere geval 1.2.3.4.5.6.7
+			int remainingTime; //hoogst waarschijnlijk niet nodig
+			
+		
+		
+		
+			
+			//System.out.println("size"+procesLijst.size());
+		//2) executen van de algoritme
+			//zolang niet alle processen executed zijn
+			while(klaarLijst.size() != totAantalProcessen) {
+				
+				
+				//2.1) kijken als er voor het huidige tijdstip nog processen moeten binnekomen	
+				while ( !procesLijst.isEmpty() &&huidigeTijd >= procesLijst.get(0).getArrivalTime() ) {
+					
+					wachtLijst.addLast(procesLijst.get(0));
+					procesLijst.remove(0);
+					genomenProcessen++;
+					
+					
+				}
+				
+				//2.2) logica voor in de wachtlijst: 
+					if(wachtLijst.isEmpty()) {
+						huidigeTijd = procesLijst.get(0).getArrivalTime();
+						//ook mog om huidige tijd te zetten op de arrivaltime van het volgende process
+					}
+					
+					//als de wachtlijst niet leeg is
+					else {
+						//pak het eerste proces in de wachttijd
+						pTemp = wachtLijst.removeFirst();
+						
+						//als remainingtime = servicetime, dan is het de 1e keer dat het wordt uitgevoerd, dus starttijd is dan
+						if(pTemp.getRemainingTime()==pTemp.getServiceTime()) {pTemp.setStarttijd(huidigeTijd);}
+					
+			 			//als de remaining service time nog minder dan 8 is
+						if(pTemp.getRemainingTime()<qTime) {
+							
+							huidigeTijd = huidigeTijd + pTemp.getRemainingTime();
+							pTemp.setRemainingTime(0);
+							
+							//process is dan klaar 
+							pTemp.setEindtijd(huidigeTijd);
+							klaarLijst.add(pTemp);
+						}
+						
+						//als de remaining service time =8
+						else if(pTemp.getRemainingTime()==qTime){
+							
+							
+							 huidigeTijd = huidigeTijd + qTime;
+							 pTemp.setRemainingTime(0);
+							 
+							 //process is klaar, voeg het toe aan de klaarlijst
+							 pTemp.setEindtijd(huidigeTijd);
+							 klaarLijst.add(pTemp);
+						}
+						
+						//als de remainnig service time > 8
+						else {
+							pTemp.setRemainingTime(pTemp.getRemainingTime()-qTime);
+							huidigeTijd = huidigeTijd +qTime;
+							
+							//process kan niet klaar zijn
+							//voeg het achteraan toe in de wachtlijst
+							wachtLijst.addLast(pTemp);
+						}
+					//System.out.println("geraakt nietuit een lege wachtlijst");
+					//einde van als de wachtlijst niet leeg is	
+					}
+				//System.out.println("geraakt aan 543");
+				//System.out.println("size" + klaarLijst.size());
+				//System.out.println("aantal elementen in wachtLijst" + wachtLijst.size());
+				//einde van de while niet alle processen in klaar zitten
+				}
+			
+			
+			
+			
+			
+		//System.out.println("geraakt aan 549");	
+		//3) adhv de eindtijden kunnen we de rest telkens berekenen
+		for(Process p : klaarLijst) {
+			p.setWachttijd( p.getEindtijd() - p.getArrivalTime() - p.getServiceTime() );
+			
+			p.setTAT( p.getEindtijd() - p.getArrivalTime() );
+			
+			p.setnTAT( p.getTAT()/p.getServiceTime()  );
+		}
+		
+	//System.out.println("geraakt hier");
+	return klaarLijst;
+	//einde methode bewerkprocessenRRQ8	
+	}
+	
+	
+	/*public ArrayList<Process> bewerkProcessenHRRN(ArrayList<Process> processen){
+		
+		//0.1) we maken een kopie van de binnenkomende processen en intializeren alles op 0 aangezien dit een doorgegeven lijst is en gebruikt werd door andere algoritmes
+		ArrayList<Process> procesLijst= new ArrayList<Process>(processen);
+		for (Process x: procesLijst) {
+			x.setEindtijd(0);
+			x.setWachttijd(0);
+			x.setRemainingTime(x.getServiceTime());
+			x.setnTAT(0);
+			x.setTAT(0);
+		}
+		
+		//0.2) procesLijst sorteren op arrivalTime
+		Collections.sort(procesLijst, new Comparator<Process>() {
+
+			public int compare(Process s1, Process s2) {
+				return Integer.compare(s1.getArrivalTime(), s2.getArrivalTime());
+			}
+		});
+		
+	}*/
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	/// BEWERKPROCESSEN ALGORITME SCHRIJVEN (DIT IS HET BELANGRIJKSTE) ////////////
 
 	public void addFCFS(ArrayList<Process> processen, String optie) {
@@ -455,6 +782,34 @@ public class Main extends Application {
 			plotnTAT(processen, series, "MLFB");
 		} else if (optie.equals("wachttijd")) {
 			plotWachttijd(processen, series, "MLFB");
+		}
+
+	}
+	
+	public void addRRQ2(ArrayList<Process> processen, String optie) {
+		// defining a series
+		XYChart.Series series = new XYChart.Series();
+		series.setName("RRQ2");
+
+		processen = bewerkProcessenRRQ2(processen);
+		if (optie.equals("nTAT")) {
+			plotnTAT(processen, series, "RRQ2");
+		} else if (optie.equals("wachttijd")) {
+			plotWachttijd(processen, series, "RRQ2");
+		}
+
+	}
+	
+	public void addRRQ8(ArrayList<Process> processen, String optie) {
+		// defining a series
+		XYChart.Series series = new XYChart.Series();
+		series.setName("RRQ8");
+
+		processen = bewerkProcessenRRQ8(processen);
+		if (optie.equals("nTAT")) {
+			plotnTAT(processen, series, "RRQ8");
+		} else if (optie.equals("wachttijd")) {
+			plotWachttijd(processen, series, "RRQ8");
 		}
 
 	}
