@@ -157,6 +157,13 @@ public class Main extends Application {
 		} else if (soort.getValue().equals("wachttijd")) {
 			addRRQ8(processen, "wachttijd");
 		}
+		
+		// data HRRN inladen
+		if (soort.getValue().equals("nTAT")) {
+			addHRRN(processen, "nTAT");
+		} else if (soort.getValue().equals("wachttijd")) {
+			addHRRN(processen, "wachttijd");
+		}
 		 
 
 		//// ANALOOG AAN HIERBOVEN ALGORITMES TOEVOEGEN //
@@ -708,7 +715,7 @@ public class Main extends Application {
 	}
 	
 	
-	/*public ArrayList<Process> bewerkProcessenHRRN(ArrayList<Process> processen){
+	public ArrayList<Process> bewerkProcessenHRRN(ArrayList<Process> processen){
 		
 		//0.1) we maken een kopie van de binnenkomende processen en intializeren alles op 0 aangezien dit een doorgegeven lijst is en gebruikt werd door andere algoritmes
 		ArrayList<Process> procesLijst= new ArrayList<Process>(processen);
@@ -728,7 +735,101 @@ public class Main extends Application {
 			}
 		});
 		
-	}*/
+		//1) definiëren van de nodige variabelen
+			
+			//1.1) lijsten
+			ArrayList<Process> klaarLijst = new ArrayList<Process>();
+			LinkedList<Process> wachtLijst = new LinkedList<Process>();
+			
+		
+			//1.2) tijdelijk process
+			Process pTemp;
+			
+			//1.3) totaal aantal processen
+			int totaalAantalProcesen = procesLijst.size();
+			
+			//1.4) huidige tijd, die we setten op de tijd waarin het eerst proces zal binnenkomen
+			int huidigeTijd = procesLijst.get(0).getArrivalTime();
+			
+			//1.5) de grootste nTAT variabelen
+			int grootsteNTATid;
+			double nTAT;
+
+			
+			
+		//2) effectief algoritme
+			//zolang de klaarlijst niet volledig gevuld is
+		while(klaarLijst.size()!= totaalAantalProcesen) {
+			
+			
+			//2.1) kijken als er voor het huidige tijdstip nog processen moeten binnekomen	
+			while ( !procesLijst.isEmpty() &&huidigeTijd >= procesLijst.get(0).getArrivalTime() ) {
+				
+				wachtLijst.addLast(procesLijst.get(0));
+				procesLijst.remove(0);
+				
+				
+			}
+			
+			//2.2) logica voor de wachtLijst
+				//2.2.1) als de wachtlijst leeg is
+			if(wachtLijst.isEmpty()) {
+				huidigeTijd = procesLijst.get(0).getArrivalTime();
+			}
+			
+				//2.2.2) als er processen in de wachtlijst zitten
+			else {
+				
+					//2.2.2.1) bereken voor alle processen in de wachtLijst de Response ratio
+					for(Process p : wachtLijst) {
+						p.setnTAT((huidigeTijd-p.getArrivalTime()+p.getServiceTime())/p.getServiceTime());	//nTAT wordt nog overschreven later op het einde voor alle processen in de klaarlijst
+						
+					}
+					
+					//2.2.2.1)	pak het process met de grootste nTAT, verwijder het uit de wachtlijst
+					nTAT = 0;
+					grootsteNTATid = -1;
+					for(int i =0 ; i<wachtLijst.size() ; i++) {
+						if(nTAT< wachtLijst.get(i).getnTAT()) {
+							grootsteNTATid = i;
+							nTAT = wachtLijst.get(i).getnTAT();
+						}
+					}
+					
+					pTemp = wachtLijst.remove(grootsteNTATid);
+					
+					//2.2.2.2) voer dit process volledig uit, voeg het toe aan de klaarlijst
+					pTemp.setStarttijd(huidigeTijd);
+					huidigeTijd = huidigeTijd + pTemp.getServiceTime();
+					pTemp.setEindtijd(huidigeTijd);
+					
+					klaarLijst.add(pTemp);
+					
+					
+			//einde van de 'als er processen in de wachtlijst zitten'	
+			}
+			
+			
+			
+			
+			
+		//einde van de while lus , einde van het algoritme	
+		}
+		
+		
+		//3) adhv de eindtijden kunnen we de rest telkens berekenen
+		for(Process p : klaarLijst) {
+			p.setWachttijd( p.getEindtijd() - p.getArrivalTime() - p.getServiceTime() );
+			
+			p.setTAT( p.getEindtijd() - p.getArrivalTime() );
+			
+			p.setnTAT( p.getTAT()/p.getServiceTime()  );
+		}
+		
+		
+	//einde van de HRRN  methode
+	return klaarLijst;
+	}
 	
 	
 	
@@ -810,6 +911,20 @@ public class Main extends Application {
 			plotnTAT(processen, series, "RRQ8");
 		} else if (optie.equals("wachttijd")) {
 			plotWachttijd(processen, series, "RRQ8");
+		}
+
+	}
+	
+	public void addHRRN(ArrayList<Process> processen, String optie) {
+		// defining a series
+		XYChart.Series series = new XYChart.Series();
+		series.setName("HRRN");
+
+		processen = bewerkProcessenHRRN(processen);
+		if (optie.equals("nTAT")) {
+			plotnTAT(processen, series, "HRRN");
+		} else if (optie.equals("wachttijd")) {
+			plotWachttijd(processen, series, "HRRN");
 		}
 
 	}
