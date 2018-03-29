@@ -164,6 +164,13 @@ public class Main extends Application {
 		} else if (soort.getValue().equals("wachttijd")) {
 			addHRRN(processen, "wachttijd");
 		}
+		
+		// data SRT inladen
+		if (soort.getValue().equals("nTAT")) {
+			addSRT(processen, "nTAT");
+		} else if (soort.getValue().equals("wachttijd")) {
+			addSRT(processen, "wachttijd");
+		}
 		 
 
 		//// ANALOOG AAN HIERBOVEN ALGORITMES TOEVOEGEN //
@@ -831,7 +838,122 @@ public class Main extends Application {
 	return klaarLijst;
 	}
 	
-	
+	public ArrayList<Process> bewerkProcessenSRT(ArrayList<Process> processen){
+		
+		//0.1) we maken een kopie van de binnenkomende processen en intializeren alles op 0 aangezien dit een doorgegeven lijst is en gebruikt werd door andere algoritmes
+		ArrayList<Process> procesLijst= new ArrayList<Process>(processen);
+		for (Process x: procesLijst) {
+			x.setEindtijd(0);
+			x.setWachttijd(0);
+			x.setRemainingTime(x.getServiceTime());
+			x.setnTAT(0);
+			x.setTAT(0);
+		}
+		
+		//0.2) procesLijst sorteren op arrivalTime
+		Collections.sort(procesLijst, new Comparator<Process>() {
+
+			public int compare(Process s1, Process s2) {
+				return Integer.compare(s1.getArrivalTime(), s2.getArrivalTime());
+			}
+		});
+		
+		//1) definieren van de nodige variabelen
+			
+			//1.1) lijsten
+			ArrayList<Process> klaarLijst = new ArrayList<Process>();
+			LinkedList<Process> wachtLijst = new LinkedList<Process>();
+			
+		
+			//1.2) tijdelijk process
+			Process pTemp;
+			
+			//1.3) totaal aantal processen
+			int totaalAantalProcesen = procesLijst.size();
+			
+			//1.4) huidige tijd, die we setten op de tijd waarin het eerst proces zal binnenkomen
+			int huidigeTijd = procesLijst.get(0).getArrivalTime();
+			
+			//1.5)  variabelen om de kortste remaining time te zoekn in de wachtLijst
+			int srtId;
+			int srt;
+		
+		//2) effectief algoritme
+			//zolang de klaarlijst niet volledig gevuld is
+			while(klaarLijst.size()!= totaalAantalProcesen) {
+
+				//2.1) kijken als er voor het huidige tijdstip nog processen moeten binnekomen	
+				while ( !procesLijst.isEmpty() &&huidigeTijd >= procesLijst.get(0).getArrivalTime() ) {
+					
+					wachtLijst.addLast(procesLijst.get(0));
+					procesLijst.remove(0);
+		
+				
+				}
+				
+				//2.2) logica voor de wachtLijst
+					//2.2.1) als de wachtLijst leeg is
+				if(wachtLijst.isEmpty()) {				
+					huidigeTijd = procesLijst.get(0).getArrivalTime();
+				}
+					//2.2.2) als er items in de wachtlijst zitten
+				else {
+					
+						//2.2.2.1) pak het  process met de kortste remaining time, execute het
+							srtId= 0;
+							srt = wachtLijst.get(0).getRemainingTime();
+							for(int i =0 ; i<wachtLijst.size(); i++) {
+								if(srt > wachtLijst.get(i).getRemainingTime()) {
+									srt = wachtLijst.get(i).getRemainingTime();
+									srtId =  i ;
+								}
+								
+							}
+							
+							//eigenlijk niet nodig om het te removen. er is niet echt meer een lijst nodig				
+							pTemp = wachtLijst.remove(srtId);
+
+						//2.2.2.2)  check als het de eerste keer is datje het uitvoer
+							if(pTemp.getRemainingTime() == pTemp.getServiceTime()) {pTemp.setStarttijd(huidigeTijd);}
+				
+							
+						//2.2.2.3) voer het proces voor 1 jiffy uit	
+							huidigeTijd++;
+							pTemp.setRemainingTime(pTemp.getRemainingTime()-1);
+							
+							
+						//2.2.2.4) terug in de lijst als  het niet klaar is
+						//		   naar de klaarLijst als het wel klaar is
+							if(pTemp.getRemainingTime()==0) {
+								pTemp.setEindtijd(huidigeTijd);
+								klaarLijst.add(pTemp);
+							}
+							else {
+								wachtLijst.addLast(pTemp);
+							}
+					
+				}
+				
+				
+				
+				
+				
+			//einde van het algoritme	
+			}
+
+
+			//3) adhv de eindtijden kunnen we de rest allemaal berekenen
+			for(Process p : klaarLijst) {
+				p.setWachttijd( p.getEindtijd() - p.getArrivalTime() - p.getServiceTime() );
+				
+				p.setTAT( p.getEindtijd() - p.getArrivalTime() );
+				
+				p.setnTAT( p.getTAT()/p.getServiceTime()  );
+			}
+		
+	//einde van de SRT methode	
+	return klaarLijst;
+	}
 	
 	
 	
@@ -928,6 +1050,22 @@ public class Main extends Application {
 		}
 
 	}
+	
+	public void addSRT(ArrayList<Process> processen, String optie) {
+		// defining a series
+		XYChart.Series series = new XYChart.Series();
+		series.setName("SRT");
+
+		processen = bewerkProcessenSRT(processen);
+		if (optie.equals("nTAT")) {
+			plotnTAT(processen, series, "SRT");
+		} else if (optie.equals("wachttijd")) {
+			plotWachttijd(processen, series, "SRT");
+		}
+
+	}
+	
+	
 	
 	/////// HIER ADD ALGORITME FUNCTIE TOEVOEGEN OOK ANALOOG AAN HIERBOVEN /////
 
